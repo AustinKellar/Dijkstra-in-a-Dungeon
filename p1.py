@@ -151,7 +151,7 @@ def compile_path(parents, source, destination):
 
     return path
 
-def dijkstras_shortest_path(initial_position, destination, graph, adj):
+def dijkstras_shortest_path(initial_position, destination, graph, adj, filename="test_maze.txt"):
     """ Searches for a minimal cost path through a graph using Dijkstra's algorithm.
 
     Args:
@@ -173,6 +173,9 @@ def dijkstras_shortest_path(initial_position, destination, graph, adj):
     parents = {}
 
     dijkstra(initial_position, graph, adj, dist, parents, destination)
+
+    #writes the printed ascii output of shortest path to a file called filename - .txt + _path.txt
+    write_level_to_file(graph, compile_path(parents,initial_position,destination), filename)
 
     return compile_path(parents, initial_position, destination)
 
@@ -220,11 +223,60 @@ def test_route(filename, src_waypoint, dst_waypoint):
     dst = level['waypoints'][dst_waypoint]
 
     # Search for and display the path from src to dst.
-    path = dijkstras_shortest_path(src, dst, level, navigation_edges)
+    path = dijkstras_shortest_path(src, dst, level, navigation_edges, filename)
     if path:
         show_level(level, path)
     else:
         print("No path possible!")
+
+
+#writes the printed character shortest path to an output file
+#note this is a modified version of the given function show_level()
+# This was changed to allow the output to be printed to a file instead of just to console
+# Args:
+#    level: the level object to be written to file
+#    path: a list of cells that represent the shortest path to be drawn
+#    filename: the file name of the mazer
+#Output:
+#    The maze with the shortest path drawn, written to a file called 'filename' - .txt + _path.txt"
+def write_level_to_file(level, path=[], filename='test_maze.txt'):
+    if filename.endswith('.txt'):
+        filename = filename[:-4] #removes the .txt so we can add _path
+        filename += '_path.txt' #adds the correct path extension
+
+    xs, ys = zip(*(list(level['spaces'].keys()) + list(level['walls'])))
+    x_lo, x_hi = min(xs), max(xs)
+    y_lo, y_hi = min(ys), max(ys)
+    if(path!=None):
+        path_cells = set(path)
+    else:
+        path_cells = []
+
+    chars = []
+    inverted_waypoints = {point: char for char, point in level['waypoints'].items()}
+
+    for j in range(y_lo, y_hi + 1):
+        for i in range(x_lo, x_hi + 1):
+
+            cell = (i, j)
+            if cell in path_cells:
+                chars.append('*')
+            elif cell in level['walls']:
+                chars.append('X')
+            elif cell in inverted_waypoints:
+                chars.append(inverted_waypoints[cell])
+            elif cell in level['spaces']:
+                chars.append(str(int(level['spaces'][cell])))
+            else:
+                chars.append(' ')
+
+        chars.append('\n')
+
+    assert '.txt' in filename, 'Error: filename does not contain file type of ".txt".'
+    f = open(filename, "w")
+    if (path_cells == []): #if there is no path, print an error in the path file
+        f.write("No path possible!\n")
+    f.write(''.join(chars))
 
 
 def cost_to_all_cells(filename, src_waypoint, output_filename):
@@ -251,10 +303,10 @@ def cost_to_all_cells(filename, src_waypoint, output_filename):
 
 
 if __name__ == '__main__':
-    filename, src_waypoint, dst_waypoint = 'example.txt', 'a','e'
+    filename, src_waypoint, dst_waypoint = 'test_maze.txt', 'a','d'
 
     # Use this function call to find the route between two waypoints.
     test_route(filename, src_waypoint, dst_waypoint)
 
     # Use this function to calculate the cost to all reachable cells from an origin point.
-    cost_to_all_cells(filename, src_waypoint, 'my_costs.csv')
+    cost_to_all_cells(filename, src_waypoint, 'my_maze_costs.csv')
